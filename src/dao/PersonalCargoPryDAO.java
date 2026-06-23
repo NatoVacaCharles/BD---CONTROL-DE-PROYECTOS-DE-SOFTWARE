@@ -48,6 +48,18 @@ public class PersonalCargoPryDAO extends BaseDAO<PersonalCargoPry, String> {
     }
 
     @Override
+    public List<PersonalCargoPry> listarSinEliminados() throws SQLException {
+        String sql = "SELECT * FROM P3T_PERSONAL_CARGO_PRY WHERE PerCarEstReg != '*' ORDER BY PerCarPerCod, PerCarCodCar";
+        List<PersonalCargoPry> lista = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) lista.add(mapResultSetToModel(rs));
+        }
+        return lista;
+    }
+
+    @Override
     public PersonalCargoPry obtenerPorId(String clave) throws SQLException {
         String[] p = clave.split("\\|");
         String sql = "SELECT * FROM P3T_PERSONAL_CARGO_PRY WHERE PerCarPerCod=? AND PerCarCodCar=?";

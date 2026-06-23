@@ -52,6 +52,19 @@ public class MovimientoDAO extends BaseDAO<Movimiento, String> {
         return lista;
     }
 
+    @Override
+    public List<Movimiento> listarSinEliminados() throws SQLException {
+        String sql = "SELECT * FROM P4T_MOVIMIENTO WHERE MovEstReg != '*' "
+                + "ORDER BY MovCliCod, MovTipProCod, MovSecPro, MovPerCod, MovCarCod, MovEtaCod, MovEtaSec";
+        List<Movimiento> lista = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) lista.add(mapResultSetToModel(rs));
+        }
+        return lista;
+    }
+
     /** Clave: "cliCod|tipCod|sec|perCod|carCod|etaCod|etaSec" */
     @Override
     public Movimiento obtenerPorId(String clave) throws SQLException {

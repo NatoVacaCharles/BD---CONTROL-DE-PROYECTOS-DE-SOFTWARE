@@ -47,6 +47,18 @@ public class ProyectoEtapaDAO extends BaseDAO<ProyectoEtapa, String> {
     }
 
     @Override
+    public List<ProyectoEtapa> listarSinEliminados() throws SQLException {
+        String sql = "SELECT * FROM P3T_PROYECTO_ETAPA WHERE ProEtaEstReg != '*' ORDER BY ProEtaCliCod, ProEtaTipCod, ProEtaSec, ProEtaCod";
+        List<ProyectoEtapa> lista = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) lista.add(mapResultSetToModel(rs));
+        }
+        return lista;
+    }
+
+    @Override
     public ProyectoEtapa obtenerPorId(String clave) throws SQLException {
         String[] p = clave.split("\\|");
         String sql = "SELECT * FROM P3T_PROYECTO_ETAPA WHERE ProEtaCliCod=? AND ProEtaTipCod=? AND ProEtaSec=? AND ProEtaCod=?";

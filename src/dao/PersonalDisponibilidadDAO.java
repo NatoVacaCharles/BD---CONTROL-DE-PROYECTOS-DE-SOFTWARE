@@ -47,6 +47,18 @@ public class PersonalDisponibilidadDAO extends BaseDAO<PersonalDisponibilidad, S
         return lista;
     }
 
+    @Override
+    public List<PersonalDisponibilidad> listarSinEliminados() throws SQLException {
+        String sql = "SELECT * FROM P3T_PERSONAL_DISPONIBILIDAD WHERE PerDisEstReg != '*' ORDER BY PerDisPerCod, PerDisFecDes";
+        List<PersonalDisponibilidad> lista = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) lista.add(mapResultSetToModel(rs));
+        }
+        return lista;
+    }
+
     /** Clave: "perCod|yyyy-MM-dd" */
     @Override
     public PersonalDisponibilidad obtenerPorId(String clave) throws SQLException {

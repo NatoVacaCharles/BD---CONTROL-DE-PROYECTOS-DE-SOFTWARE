@@ -64,10 +64,11 @@ public class TipoEstandarDAO extends BaseDAO<TipoEstandar, Integer> {
     public void actualizarUnidadDefinicion(int codigo, String nuevaUnidad) throws SQLException {
         String sql = "UPDATE " + getTableName() + " SET TipEstUniDef = ? WHERE " + getCodigoColumnName() + " = ?";
         try (Connection conn = DatabaseConnection.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
+            PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, nuevaUnidad);
             ps.setInt(2, codigo);
-            ps.executeUpdate();
+            int filasAfectadas = ps.executeUpdate();
+            validarFilasAfectadas(filasAfectadas, codigo, "modificar");
         }
     }
 }

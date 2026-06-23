@@ -253,7 +253,7 @@ public class MantenimientoProyectoFrame extends MantenimientoBaseFrame<Proyecto,
                 }
                 case "MOD": {
                     Proyecto p = obtenerModeloDeCampos();
-                    proDAO.actualizar(p);
+                    proDAO.actualizar(p, registroSeleccionadoId);
                     JOptionPane.showMessageDialog(this, "Proyecto modificado correctamente.");
                     break;
                 }
@@ -309,6 +309,31 @@ public class MantenimientoProyectoFrame extends MantenimientoBaseFrame<Proyecto,
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error al cargar registro: " + e.getMessage());
         }
+    }
+
+    @Override
+    protected void iniciarModificar() {
+        if (CarFlaAct == 1) {
+            JOptionPane.showMessageDialog(this, "Ya hay una operación pendiente. Use ACTUALIZAR o CANCELAR.");
+            return;
+        }
+        if (tblRegistros.getSelectedRow() == -1) {
+            JOptionPane.showMessageDialog(this, "Primero seleccione un registro de la tabla.");
+            return;
+        }
+        cargarRegistroSeleccionadoEnCampos();
+        protegerCamposSegunOperacion("MOD");
+        bloquearBotonesOperacion();
+        CarFlaAct = 1;
+        operacionPendiente = "MOD";
+    }
+
+    private void bloquearBotonesOperacion() {
+        btnAdicionar.setEnabled(false);
+        btnModificar.setEnabled(false);
+        btnEliminar.setEnabled(false);
+        btnInactivar.setEnabled(false);
+        btnReactivar.setEnabled(false);
     }
 
     // -------------------------------------------------------------------------

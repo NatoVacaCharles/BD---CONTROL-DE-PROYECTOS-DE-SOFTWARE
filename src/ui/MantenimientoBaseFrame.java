@@ -154,8 +154,11 @@ public abstract class MantenimientoBaseFrame<T, ID> extends JFrame {
             if (!e.getValueIsAdjusting() && CarFlaAct == 0) {
                 int row = tblRegistros.getSelectedRow();
                 if (row != -1) {
-                    registroSeleccionadoId = (ID) tableModel.getValueAt(row, 0);
-                    // No cargar automáticamente los campos, solo guardar la selección
+                    // Guardamos el ID de la columna 0. El cast es seguro porque
+                    // modelToRow() siempre coloca getCodigoFromModel() en posición 0.
+                    @SuppressWarnings("unchecked")
+                    ID idSeleccionado = (ID) tableModel.getValueAt(row, 0);
+                    registroSeleccionadoId = idSeleccionado;
                 }
             }
         });
@@ -188,7 +191,9 @@ public abstract class MantenimientoBaseFrame<T, ID> extends JFrame {
             JOptionPane.showMessageDialog(this, "Primero seleccione un registro de la tabla.");
             return;
         }
+        ID idPreservado = registroSeleccionadoId;
         cargarRegistroSeleccionadoEnCampos();
+        registroSeleccionadoId = idPreservado;
         setEditableCodigo(false);
         setEditableNombre(true);
         protegerCamposSegunOperacion("MOD");
@@ -206,7 +211,11 @@ public abstract class MantenimientoBaseFrame<T, ID> extends JFrame {
             JOptionPane.showMessageDialog(this, "Primero seleccione un registro de la tabla.");
             return;
         }
+        // Preservar el ID ANTES de cargar campos (cargarRegistroSeleccionadoEnCampos
+        // puede reemplazarlo si la subclase lo sobreescribe con un valor distinto).
+        ID idPreservado = registroSeleccionadoId;
         cargarRegistroSeleccionadoEnCampos();
+        registroSeleccionadoId = idPreservado; // restaurar siempre
         setEditableCodigo(false);
         setEditableNombre(false);
         setEstadoEnCampos("*");
@@ -225,7 +234,9 @@ public abstract class MantenimientoBaseFrame<T, ID> extends JFrame {
             JOptionPane.showMessageDialog(this, "Primero seleccione un registro de la tabla.");
             return;
         }
+        ID idPreservado = registroSeleccionadoId;
         cargarRegistroSeleccionadoEnCampos();
+        registroSeleccionadoId = idPreservado;
         setEditableCodigo(false);
         setEditableNombre(false);
         setEstadoEnCampos("I");
@@ -244,7 +255,9 @@ public abstract class MantenimientoBaseFrame<T, ID> extends JFrame {
             JOptionPane.showMessageDialog(this, "Primero seleccione un registro de la tabla.");
             return;
         }
+        ID idPreservado = registroSeleccionadoId;
         cargarRegistroSeleccionadoEnCampos();
+        registroSeleccionadoId = idPreservado;
         setEditableCodigo(false);
         setEditableNombre(false);
         setEstadoEnCampos("A");
@@ -255,6 +268,8 @@ public abstract class MantenimientoBaseFrame<T, ID> extends JFrame {
     }
 
     protected void cargarRegistroSeleccionadoEnCampos() {
+        // Preservar ID: nunca dejar que una subclase o el flujo lo pierda.
+        ID idAntes = registroSeleccionadoId;
         try {
             T model = dao.obtenerPorId(registroSeleccionadoId);
             if (model != null) {
@@ -265,6 +280,9 @@ public abstract class MantenimientoBaseFrame<T, ID> extends JFrame {
             }
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Error al cargar registro: " + e.getMessage());
+        } finally {
+            // Siempre restaurar el ID original para que cambiarEstado() tenga el valor correcto.
+            if (registroSeleccionadoId == null) registroSeleccionadoId = idAntes;
         }
     }
 
@@ -358,7 +376,9 @@ public abstract class MantenimientoBaseFrame<T, ID> extends JFrame {
     protected void cargarTabla() {
         tableModel.setRowCount(0);
         try {
-            List<T> lista = dao.listarTodos();
+            // Usamos listarSinEliminados() para que los registros con estado '*'
+            // no aparezcan en la grilla tras la eliminación lógica.
+            List<T> lista = dao.listarSinEliminados();
             for (T model : lista) {
                 tableModel.addRow(modelToRow(model));
             }

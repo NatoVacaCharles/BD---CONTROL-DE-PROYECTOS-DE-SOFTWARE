@@ -50,6 +50,18 @@ public class EquipoProyectoDAO extends BaseDAO<EquipoProyecto, String> {
         return lista;
     }
 
+    @Override
+    public List<EquipoProyecto> listarSinEliminados() throws SQLException {
+        String sql = "SELECT * FROM P3T_EQUIPO_PROYECTO WHERE EqpEstReg != '*' ORDER BY EqpProCliCod, EqpProTipCod, EqpProSec, EqpPerCod, EqpCarCod";
+        List<EquipoProyecto> lista = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) lista.add(mapResultSetToModel(rs));
+        }
+        return lista;
+    }
+
     /** Clave: "cliCod|tipCod|sec|perCod|carCod" */
     @Override
     public EquipoProyecto obtenerPorId(String clave) throws SQLException {

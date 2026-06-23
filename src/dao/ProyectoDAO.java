@@ -79,6 +79,18 @@ public class ProyectoDAO extends BaseDAO<Proyecto, String> {
         return lista;
     }
 
+    @Override
+    public List<Proyecto> listarSinEliminados() throws SQLException {
+        String sql = "SELECT * FROM P2M_PROYECTO WHERE ProEstReg != '*' ORDER BY ProCliCod, ProTipProCod, ProSecPro";
+        List<Proyecto> lista = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) lista.add(mapResultSetToModel(rs));
+        }
+        return lista;
+    }
+
     /** Obtener por PK compuesta (clave: "cliCod|tipCod|sec"). */
     @Override
     public Proyecto obtenerPorId(String claveCompuesta) throws SQLException {
@@ -115,7 +127,25 @@ public class ProyectoDAO extends BaseDAO<Proyecto, String> {
 
     /** UPDATE de todos los campos editables de un proyecto. */
     public void actualizar(Proyecto p) throws SQLException {
+        actualizar(p, p.getProCliCod() + "|" + p.getProTipProCod() + "|" + p.getProSecPro());
+    }
+
+    /**
+     * UPDATE de todos los campos editables usando la clave original en el WHERE.
+     * Esto permite cambiar Cliente o Tipo Proyecto, que forman parte de la PK.
+     */
+    public void actualizar(Proyecto p, String claveOriginal) throws SQLException {
+        String[] partes = claveOriginal.split("\\|");
+        if (partes.length != 3) {
+            throw new SQLException("Clave de proyecto inválida: " + claveOriginal);
+        }
+
+        int cliCodOriginal = Integer.parseInt(partes[0]);
+        int tipCodOriginal = Integer.parseInt(partes[1]);
+        int secOriginal = Integer.parseInt(partes[2]);
+
         String sql = "UPDATE P2M_PROYECTO SET "
+                + "ProCliCod=?, ProTipProCod=?, ProSecPro=?, "
                 + "ProFecCon=?, ProFecPac=?, ProFecIni=?, ProFecEnt=?, ProFecCie=?, "
                 + "ProMonProCos=?, ProMonProGas=?, ProMonProUti=?, ProMonPro=?, "
                 + "ProMonProCosRea=?, ProMonProGasRea=?, ProMonProUtiRea=?, ProMonProRea=?, "
@@ -124,6 +154,9 @@ public class ProyectoDAO extends BaseDAO<Proyecto, String> {
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             int i = 1;
+            ps.setInt(i++, p.getProCliCod());
+            ps.setInt(i++, p.getProTipProCod());
+            ps.setInt(i++, p.getProSecPro());
             ps.setDate(i++, toDate(p.getProFecCon()));
             ps.setDate(i++, toDate(p.getProFecPac()));
             ps.setDate(i++, toDate(p.getProFecIni()));
@@ -139,10 +172,11 @@ public class ProyectoDAO extends BaseDAO<Proyecto, String> {
             ps.setBigDecimal(i++, p.getProMonProRea());
             ps.setInt(i++, p.getProEstPro());
             // WHERE
-            ps.setInt(i++, p.getProCliCod());
-            ps.setInt(i++, p.getProTipProCod());
-            ps.setInt(i,   p.getProSecPro());
-            ps.executeUpdate();
+            ps.setInt(i++, cliCodOriginal);
+            ps.setInt(i++, tipCodOriginal);
+            ps.setInt(i, secOriginal);
+            int filasAfectadas = ps.executeUpdate();
+            validarFilasAfectadasProyecto(filasAfectadas, claveOriginal, "modificar");
         }
     }
 
@@ -197,5 +231,19 @@ public class ProyectoDAO extends BaseDAO<Proyecto, String> {
 
     private Date toDate(LocalDate ld) {
         return ld != null ? Date.valueOf(ld) : null;
+    }
+
+    private void validarFilasAfectadasProyecto(int filasAfectadas, String claveOriginal, String operacion)
+            throws SQLException {
+        if (filasAfectadas > 0) {
+            return;
+        }
+
+        if (obtenerPorId(claveOriginal) != null) {
+            throw new SQLException("No se realizaron cambios al " + operacion
+                    + ". Verifique que el nuevo valor sea distinto al actual.");
+        }
+
+        throw new SQLException("No se encontró el proyecto con clave: " + claveOriginal);
     }
 }

@@ -53,6 +53,18 @@ public class ActividadDAO extends BaseDAO<Actividad, String> {
         return lista;
     }
 
+    @Override
+    public List<Actividad> listarSinEliminados() throws SQLException {
+        String sql = "SELECT * FROM P3M_ACTIVIDAD WHERE ActEstReg != '*' ORDER BY ActEtaCod, ActCod";
+        List<Actividad> lista = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) lista.add(mapResultSetToModel(rs));
+        }
+        return lista;
+    }
+
     /** Obtener por PK compuesta "etaCod|actCod". */
     @Override
     public Actividad obtenerPorId(String clave) throws SQLException {

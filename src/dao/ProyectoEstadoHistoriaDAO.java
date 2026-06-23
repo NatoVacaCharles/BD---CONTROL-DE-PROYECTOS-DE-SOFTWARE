@@ -49,6 +49,18 @@ public class ProyectoEstadoHistoriaDAO extends BaseDAO<ProyectoEstadoHistoria, S
         return lista;
     }
 
+    @Override
+    public List<ProyectoEstadoHistoria> listarSinEliminados() throws SQLException {
+        String sql = "SELECT * FROM P2H_PROYECTO_ESTADO WHERE HisProEstReg != '*' ORDER BY HisProCliCod, HisProTipCod, HisProSec, HisProSecCam";
+        List<ProyectoEstadoHistoria> lista = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) lista.add(mapResultSetToModel(rs));
+        }
+        return lista;
+    }
+
     /** Clave: "cliCod|tipCod|sec|secCam" */
     @Override
     public ProyectoEstadoHistoria obtenerPorId(String clave) throws SQLException {

@@ -44,6 +44,18 @@ public class ProyectoFactorDAO extends BaseDAO<ProyectoFactor, String> {
     }
 
     @Override
+    public List<ProyectoFactor> listarSinEliminados() throws SQLException {
+        String sql = "SELECT * FROM P2T_PROYECTO_FACTOR WHERE ProFacEstReg != '*' ORDER BY ProFacCliCod, ProFacTipCod, ProFacSec, ProFacCod";
+        List<ProyectoFactor> lista = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) lista.add(mapResultSetToModel(rs));
+        }
+        return lista;
+    }
+
+    @Override
     public ProyectoFactor obtenerPorId(String clave) throws SQLException {
         String[] p = clave.split("\\|");
         String sql = "SELECT * FROM P2T_PROYECTO_FACTOR WHERE ProFacCliCod=? AND ProFacTipCod=? AND ProFacSec=? AND ProFacCod=?";

@@ -31,9 +31,47 @@ public abstract class BaseDAO<T, ID> {
         return getEstadoColumnName() != null;
     }
 
+    protected void validarFilasAfectadas(int filasAfectadas, ID codigo, String operacion) throws SQLException {
+        if (filasAfectadas > 0) {
+            return;
+        }
+
+        if (existeCodigo(codigo)) {
+            throw new SQLException("No se realizaron cambios al " + operacion
+                    + ". Verifique que el nuevo valor sea distinto al actual.");
+        }
+
+        throw new SQLException("No se encontró el registro con código: " + codigo);
+    }
+
     // Operación común: listar todos los registros (ordenados por código)
     public List<T> listarTodos() throws SQLException {
         String sql = "SELECT * FROM " + getTableName() + " ORDER BY " + getCodigoColumnName();
+        List<T> lista = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                lista.add(mapResultSetToModel(rs));
+            }
+        }
+        return lista;
+    }
+
+    /**
+     * Lista todos los registros EXCEPTO los eliminados lógicamente (estado = '*').
+     * Es el método que usa la grilla de mantenimiento — los registros con '*'
+     * desaparecen de la vista tras una eliminación lógica, igual que en cualquier
+     * sistema empresarial.
+     * Las subclases pueden sobrescribirlo si tienen un ORDER BY más complejo.
+     */
+    public List<T> listarSinEliminados() throws SQLException {
+        String estadoCol = getEstadoColumnName();
+        // Si la tabla no tiene columna de estado, devolvemos todos
+        if (estadoCol == null) return listarTodos();
+        String sql = "SELECT * FROM " + getTableName()
+                + " WHERE " + estadoCol + " != '*'"
+                + " ORDER BY " + getCodigoColumnName();
         List<T> lista = new ArrayList<>();
         try (Connection conn = DatabaseConnection.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql);
@@ -70,7 +108,8 @@ public abstract class BaseDAO<T, ID> {
                 PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, nuevoNombre);
             ps.setObject(2, codigo);
-            ps.executeUpdate();
+            int filasAfectadas = ps.executeUpdate();
+            validarFilasAfectadas(filasAfectadas, codigo, "modificar");
         }
     }
 
@@ -85,7 +124,8 @@ public abstract class BaseDAO<T, ID> {
                 PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, nuevoEstado);
             ps.setObject(2, codigo);
-            ps.executeUpdate();
+            int filasAfectadas = ps.executeUpdate();
+            validarFilasAfectadas(filasAfectadas, codigo, "cambiar el estado de");
         }
     }
 
@@ -96,9 +136,10 @@ public abstract class BaseDAO<T, ID> {
         }
         String sql = "DELETE FROM " + getTableName() + " WHERE " + getCodigoColumnName() + " = ?";
         try (Connection conn = DatabaseConnection.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
+            PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setObject(1, codigo);
-            ps.executeUpdate();
+            int filasAfectadas = ps.executeUpdate();
+            validarFilasAfectadas(filasAfectadas, codigo, "eliminar");
         }
     }
 

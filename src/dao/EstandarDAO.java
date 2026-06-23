@@ -58,6 +58,18 @@ public class EstandarDAO extends BaseDAO<Estandar, String> {
         return lista;
     }
 
+    @Override
+    public List<Estandar> listarSinEliminados() throws SQLException {
+        String sql = "SELECT * FROM P3M_ESTANDAR WHERE EstEstReg != '*' ORDER BY EstActEtaCod, EstActActCod, EstCod";
+        List<Estandar> lista = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) lista.add(mapResultSetToModel(rs));
+        }
+        return lista;
+    }
+
     /** Obtener por PK compuesta "etaCod|actCod|estCod". */
     @Override
     public Estandar obtenerPorId(String clave) throws SQLException {

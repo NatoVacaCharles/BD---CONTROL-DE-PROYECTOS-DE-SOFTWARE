@@ -69,7 +69,8 @@ public class FactorDAO extends BaseDAO<Factor, Integer> {
                 PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setBigDecimal(1, nuevoPorcentaje);
             ps.setInt(2, codigo);
-            ps.executeUpdate();
+            int filasAfectadas = ps.executeUpdate();
+            validarFilasAfectadas(filasAfectadas, codigo, "modificar");
         }
     }
 
@@ -80,10 +81,11 @@ public class FactorDAO extends BaseDAO<Factor, Integer> {
         String sql = "UPDATE " + getTableName() + " SET " + getNombreColumnName() + " = ? WHERE "
                 + getCodigoColumnName() + " = ?";
         try (Connection conn = DatabaseConnection.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
+            PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, nuevoNombre);
             ps.setInt(2, codigo);
-            ps.executeUpdate();
+            int filasAfectadas = ps.executeUpdate();
+            validarFilasAfectadas(filasAfectadas, codigo, "modificar");
         }
     }
 }
